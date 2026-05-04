@@ -1,0 +1,307 @@
+/* Layouts */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.header {
+  text-align: center;
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.title {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--primary), #00e600);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
+.mainLayout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 992px) {
+  .mainLayout {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.panel {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.panelTitle {
+  font-size: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Upload Area */
+.dropzone {
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 4rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.dropzone:hover, .dropzone.active {
+  border-color: var(--primary);
+  background-color: rgba(0, 185, 0, 0.05);
+}
+
+.dropzoneIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+
+.dropzoneText {
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.dropzoneSub {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+/* Editor Area */
+.canvasWrapper {
+  position: relative;
+  width: 100%;
+  background-color: var(--bg-surface-elevated);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background-image: 
+    linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333), 
+    linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333);
+  background-size: 20px 20px;
+  background-position: 0 0, 10px 10px;
+}
+
+.canvas {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  cursor: crosshair;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.controlLabel {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+}
+
+.slider {
+  width: 100%;
+  -webkit-appearance: none;
+  height: 6px;
+  background: var(--border-color);
+  border-radius: var(--radius-full);
+  outline: none;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Previews */
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  background-color: var(--bg-surface-elevated);
+  padding: 1rem;
+  border-radius: var(--radius-md);
+}
+
+.previewCell {
+  aspect-ratio: 370 / 320;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background-image: 
+    linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333), 
+    linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333);
+  background-size: 10px 10px;
+  background-position: 0 0, 5px 5px;
+  overflow: hidden;
+  position: relative;
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Forms */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.input, .textarea {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+}
+
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(0, 185, 0, 0.2);
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.errorText {
+  color: var(--text-error);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.characterCount {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.characterCount.error {
+  color: var(--text-error);
+}
+
+/* Buttons */
+.button {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.button:hover {
+  background-color: var(--border-color-focus);
+}
+
+.buttonPrimary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.buttonPrimary:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.buttonPrimary:disabled {
+  background-color: var(--border-color);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.buttonFull {
+  width: 100%;
+}
+
+/* Alerts */
+.alert {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  background-color: rgba(255, 82, 82, 0.1);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  color: var(--text-error);
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.alertIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.alertContent {
+  font-size: 0.9rem;
+}
