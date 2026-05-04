@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const imageFile = formData.get("image") as File;
     const gridSpecStr = formData.get("gridSpec") as string;
+    const isMobile = formData.get("isMobile") === "true";
 
     if (!imageFile || !gridSpecStr) {
       return NextResponse.json({ error: "必要なデータが不足しています。" }, { status: 400 });
@@ -33,13 +34,14 @@ export async function POST(req: NextRequest) {
 
     // Calculatable area check not needed as strictly defined coordinates are given
     const zip = new JSZip();
+    const images: Array<{ name: string; data: string }> = [];
 
     // Max LINE Sticker dimensions
     const LINE_MAX_W = 370;
     const LINE_MAX_H = 320;
 
-    for (let row = 0; row < 4; row++) {
-      for (let col = 0; col < 4; col++) {
+    for (let row = 0; row < gridSpec.rows.length; row++) {
+      for (let col = 0; col < gridSpec.cols.length; col++) {
         const c = gridSpec.cols[col];
         const r = gridSpec.rows[row];
 
@@ -92,10 +94,22 @@ export async function POST(req: NextRequest) {
           console.warn(`Cell at [${row}, ${col}] exceeds 1MB limit.`);
         }
 
-        const index = row * 4 + col + 1;
+        const index = row * gridSpec.cols.length + col + 1;
         const fileName = `sticker_${index.toString().padStart(2, "0")}.png`;
-        zip.file(fileName, paddedBuffer);
+        
+        if (isMobile) {
+          images.push({
+            name: fileName,
+            data: `data:image/png;base64,${paddedBuffer.toString("base64")}`
+          });
+        } else {
+          zip.file(fileName, paddedBuffer);
+        }
       }
+    }
+
+    if (isMobile) {
+      return NextResponse.json({ images }, { status: 200 });
     }
 
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "STORE" });

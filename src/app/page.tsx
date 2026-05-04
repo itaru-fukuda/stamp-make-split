@@ -4,21 +4,19 @@ import { useState, useRef, useEffect } from "react";
 import styles from "@/styles/components.module.css";
 import ImageUploader from "@/components/ImageUploader";
 import CanvasPreview from "@/components/CanvasPreview";
-import MetadataForm from "@/components/MetadataForm";
 
 export type GridSpec = {
   cols: Array<{ left: number; right: number }>;
   rows: Array<{ top: number; bottom: number }>;
 };
 
-export type Metadata = {
-  title: string;
-  creator: string;
-  description: string;
-  copyright: string;
-};
-
 export default function Home() {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Grid config before uploading
+  const [configCols, setConfigCols] = useState(4);
+  const [configRows, setConfigRows] = useState(4);
+  
   const [imageFile, setImageFile] = useState<File | null>(null);
   
   const [processedImageFile, setProcessedImageFile] = useState<File | null>(null);
@@ -29,14 +27,17 @@ export default function Home() {
   const [bgTolerance, setBgTolerance] = useState(80);
 
   const [gridSpec, setGridSpec] = useState<GridSpec | null>(null);
-  const [metadata, setMetadata] = useState<Metadata>({
-    title: "",
-    creator: "",
-    description: "",
-    copyright: "",
-  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<Array<{name: string, data: string}> | null>(null);
+
+  useEffect(() => {
+    // Basic mobile detection
+    const ua = navigator.userAgent;
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) {
+      setIsMobile(true);
+    }
+  }, []);
 
   // Background removal effect (Chroma Key)
   useEffect(() => {
@@ -113,6 +114,7 @@ export default function Home() {
     setImageFile(file);
     setError(null);
     setRemoveBg(false);
+    setGeneratedImages(null);
 
     // Auto-detect background color from top-left pixel
     const url = URL.createObjectURL(file);
@@ -137,11 +139,13 @@ export default function Home() {
     if (!processedImageFile) return;
     setIsProcessing(true);
     setError(null);
+    setGeneratedImages(null);
 
     try {
       const formData = new FormData();
       formData.append("image", processedImageFile);
       formData.append("gridSpec", JSON.stringify(gridSpec));
+      formData.append("isMobile", isMobile.toString());
       
       const response = await fetch("/api/split", {
         method: "POST",
@@ -153,17 +157,26 @@ export default function Home() {
         throw new Error(errData.error || "処理に失敗しました");
       }
 
-      // Download the ZIP file
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = `line_stickers_${Date.now()}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      if (isMobile) {
+        const data = await response.json();
+        setGeneratedImages(data.images);
+        // Scroll to the generated images
+        setTimeout(() => {
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }, 100);
+      } else {
+        // Download the ZIP file
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.style.display = "none";
+        a.href = url;
+        a.download = `stickers_${Date.now()}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
 
     } catch (err: any) {
       setError(err.message);
@@ -175,9 +188,9 @@ export default function Home() {
   return (
     <main className={styles.container}>
       <header className={styles.header}>
-        <h1 className={styles.title}>LINEスタンプ 4x4 自動分割ツール</h1>
+        <h1 className={styles.title}>スタンプ画像 自動分割ツール</h1>
         <p className={styles.subtitle}>
-          1枚の画像（4x4のグリッド配置）から16個のLINEスタンプ用画像を生成・プレビュー・ZIPダウンロードします。
+          1枚の画像を指定したグリッド構成で自動分割し、スタンプ用画像（最大370x320px）として生成・ダウンロードします。
         </p>
       </header>
 
@@ -190,8 +203,39 @@ export default function Home() {
 
       <div className={styles.mainLayout}>
         <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+          
           <section className={styles.panel}>
-            <h2 className={styles.panelTitle}>1. 画像アップロード</h2>
+            <h2 className={styles.panelTitle}>1. グリッド構成の指定</h2>
+            <div style={{ display: "flex", gap: "2rem", alignItems: "center" }}>
+              <div className={styles.formGroup} style={{ flex: 1 }}>
+                <label className={styles.label}>列数 (横方向)</label>
+                <input 
+                  type="number" 
+                  min="1" max="10"
+                  className={styles.input} 
+                  value={configCols} 
+                  onChange={(e) => setConfigCols(Math.max(1, parseInt(e.target.value) || 1))}
+                  disabled={imageFile !== null}
+                />
+              </div>
+              <div style={{ fontSize: "1.5rem", color: "var(--text-secondary)", marginTop: "1rem" }}>×</div>
+              <div className={styles.formGroup} style={{ flex: 1 }}>
+                <label className={styles.label}>行数 (縦方向)</label>
+                <input 
+                  type="number" 
+                  min="1" max="10"
+                  className={styles.input} 
+                  value={configRows} 
+                  onChange={(e) => setConfigRows(Math.max(1, parseInt(e.target.value) || 1))}
+                  disabled={imageFile !== null}
+                />
+              </div>
+            </div>
+            {imageFile && <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>※画像のアップロード後は変更できません。「別の画像を選ぶ」でリセットしてください。</p>}
+          </section>
+
+          <section className={styles.panel}>
+            <h2 className={styles.panelTitle}>2. 画像アップロード</h2>
             {!imageFile ? (
               <ImageUploader onUpload={handleImageUpload} />
             ) : (
@@ -203,6 +247,7 @@ export default function Home() {
                     setImageFile(null);
                     setGridSpec(null);
                     setRemoveBg(false);
+                    setGeneratedImages(null);
                   }}
                 >
                   別の画像を選ぶ
@@ -213,7 +258,7 @@ export default function Home() {
 
           {imageFile && (
             <section className={styles.panel}>
-              <h2 className={styles.panelTitle}>クロマキー背景除去 (任意)</h2>
+              <h2 className={styles.panelTitle}>3. クロマキー背景除去 (任意)</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
                   <input 
@@ -265,21 +310,25 @@ export default function Home() {
 
           {processedImageUrl && gridSpec && (
             <section className={styles.panel}>
-              <h2 className={styles.panelTitle}>2. グリッド調整</h2>
+              <h2 className={styles.panelTitle}>4. グリッド調整</h2>
               <CanvasPreview 
                 imageUrl={processedImageUrl} 
                 gridSpec={gridSpec} 
                 onChangeGridSpec={setGridSpec} 
+                configCols={configCols}
+                configRows={configRows}
               />
             </section>
           )}
           {processedImageUrl && !gridSpec && (
             <section className={styles.panel}>
-              <h2 className={styles.panelTitle}>2. グリッド調整</h2>
+              <h2 className={styles.panelTitle}>4. グリッド調整</h2>
               <CanvasPreview 
                 imageUrl={processedImageUrl} 
                 gridSpec={null} 
                 onChangeGridSpec={setGridSpec} 
+                configCols={configCols}
+                configRows={configRows}
               />
             </section>
           )}
@@ -287,29 +336,54 @@ export default function Home() {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
           <section className={styles.panel}>
-            <h2 className={styles.panelTitle}>3. メタデータ検証 (任意)</h2>
-            <MetadataForm 
-              metadata={metadata} 
-              onChange={setMetadata} 
-            />
-          </section>
-
-          <section className={styles.panel}>
-            <h2 className={styles.panelTitle}>4. エクスポート</h2>
+            <h2 className={styles.panelTitle}>5. エクスポート</h2>
             <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-              LINE指定の仕様（透過PNG、最大370x320px等）に従い自動変換します。<br />
-              ファイル名は連番（sticker_01.png〜）となります。
+              スタンプ推奨仕様（透過PNG、最大370x320px、余白付き）に従い自動リサイズ変換します。<br />
+              {isMobile ? "スマホ環境では生成後に一覧表示されます。画像を個別に保存してください。" : "ファイル名は連番（sticker_01.png〜）となり、ZIPファイルで一括ダウンロードされます。"}
             </p>
             <button 
               className={`${styles.button} ${styles.buttonPrimary} ${styles.buttonFull}`}
               onClick={handleDownload}
               disabled={!processedImageUrl || !gridSpec || isProcessing}
             >
-              {isProcessing ? "処理中..." : "ZIP一括ダウンロード"}
+              {isProcessing ? "処理中..." : isMobile ? "スタンプ画像を生成する（一覧表示）" : "ZIP一括ダウンロード"}
             </button>
           </section>
         </div>
       </div>
+
+      {generatedImages && (
+        <section className={styles.panel} style={{ animation: "fadeIn 0.5s ease", marginTop: "2rem", border: "2px solid var(--primary-color)" }}>
+          <h2 className={styles.panelTitle} style={{ borderBottom: "none", paddingBottom: 0, color: "var(--primary-color)" }}>✅ スタンプ画像が生成されました！</h2>
+          <p style={{ fontSize: "0.95rem", color: "var(--text-secondary)" }}>
+            以下の画像を長押しして「写真に追加（保存）」するか、個別ボタンから保存してください。
+          </p>
+          
+          <div style={{ 
+            display: "grid", 
+            gridTemplateColumns: `repeat(${Math.min(configCols, 4)}, 1fr)`, 
+            gap: "1.5rem", 
+            marginTop: "1rem" 
+          }}>
+            {generatedImages.map((img, i) => (
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center" }}>
+                <div style={{ width: "100%", aspectRatio: "370/320", backgroundImage: "linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333), linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333)", backgroundSize: "10px 10px", backgroundPosition: "0 0, 5px 5px", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border-color)" }}>
+                  <img src={img.data} alt={img.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                </div>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "bold" }}>{img.name}</span>
+                <a 
+                  href={img.data} 
+                  download={img.name}
+                  className={`${styles.button} ${styles.buttonPrimary}`}
+                  style={{ fontSize: "0.9rem", padding: "0.5rem 1rem", width: "100%" }}
+                >
+                  保存
+                </a>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }

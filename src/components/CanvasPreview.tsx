@@ -8,9 +8,11 @@ interface CanvasPreviewProps {
   imageUrl: string;
   gridSpec: GridSpec | null;
   onChangeGridSpec: (spec: GridSpec) => void;
+  configCols: number;
+  configRows: number;
 }
 
-export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec }: CanvasPreviewProps) {
+export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec, configCols, configRows }: CanvasPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
@@ -23,25 +25,27 @@ export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec }: 
       setImageObj(img);
       
       if (!gridSpec) {
-        // Initialize uniform 4x4 grid
+        // Initialize dynamic grid based on config
         const cols = [];
         const rows = [];
-        const cellW = Math.floor(img.width / 4);
-        const cellH = Math.floor(img.height / 4);
+        const cellW = Math.floor(img.width / configCols);
+        const cellH = Math.floor(img.height / configRows);
         
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < configCols; i++) {
           cols.push({ left: i * cellW, right: (i + 1) * cellW });
+        }
+        for (let i = 0; i < configRows; i++) {
           rows.push({ top: i * cellH, bottom: (i + 1) * cellH });
         }
         
         // Ensure the last cell reaches the end exactly
-        cols[3].right = img.width;
-        rows[3].bottom = img.height;
+        if (configCols > 0) cols[configCols - 1].right = img.width;
+        if (configRows > 0) rows[configRows - 1].bottom = img.height;
 
         onChangeGridSpec({ cols, rows });
       }
     };
-  }, [imageUrl, gridSpec, onChangeGridSpec]);
+  }, [imageUrl, gridSpec, onChangeGridSpec, configCols, configRows]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -68,8 +72,8 @@ export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec }: 
     ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
     ctx.fillRect(0, 0, imageSize.width, imageSize.height);
 
-    for (let row = 0; row < 4; row++) {
-      for (let col = 0; col < 4; col++) {
+    for (let row = 0; row < gridSpec.rows.length; row++) {
+      for (let col = 0; col < gridSpec.cols.length; col++) {
         const c = gridSpec.cols[col];
         const r = gridSpec.rows[row];
         
@@ -128,13 +132,19 @@ export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec }: 
                   <label className={styles.controlLabel}>
                     <span>左端 (Left)</span>
                   </label>
-                  <input type="number" value={col.left} onChange={(e) => handleColChange(i, "left", parseInt(e.target.value) || 0)} style={{ width: "100%", background: "var(--bg-surface)", color: "var(--text-primary)", border: "1px solid var(--border-color)", borderRadius: "4px", padding: "4px" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <input type="range" className={styles.slider} min={0} max={imageSize.width} value={col.left} onChange={(e) => handleColChange(i, "left", parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
+                    <span style={{ fontSize: "0.8rem", width: "40px", textAlign: "right", fontFamily: "monospace" }}>{col.left}px</span>
+                  </div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <label className={styles.controlLabel}>
                     <span>右端 (Right)</span>
                   </label>
-                  <input type="number" value={col.right} onChange={(e) => handleColChange(i, "right", parseInt(e.target.value) || 0)} style={{ width: "100%", background: "var(--bg-surface)", color: "var(--text-primary)", border: "1px solid var(--border-color)", borderRadius: "4px", padding: "4px" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <input type="range" className={styles.slider} min={0} max={imageSize.width} value={col.right} onChange={(e) => handleColChange(i, "right", parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
+                    <span style={{ fontSize: "0.8rem", width: "40px", textAlign: "right", fontFamily: "monospace" }}>{col.right}px</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -152,13 +162,19 @@ export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec }: 
                   <label className={styles.controlLabel}>
                     <span>上端 (Top)</span>
                   </label>
-                  <input type="number" value={row.top} onChange={(e) => handleRowChange(i, "top", parseInt(e.target.value) || 0)} style={{ width: "100%", background: "var(--bg-surface)", color: "var(--text-primary)", border: "1px solid var(--border-color)", borderRadius: "4px", padding: "4px" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <input type="range" className={styles.slider} min={0} max={imageSize.height} value={row.top} onChange={(e) => handleRowChange(i, "top", parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
+                    <span style={{ fontSize: "0.8rem", width: "40px", textAlign: "right", fontFamily: "monospace" }}>{row.top}px</span>
+                  </div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <label className={styles.controlLabel}>
                     <span>下端 (Bottom)</span>
                   </label>
-                  <input type="number" value={row.bottom} onChange={(e) => handleRowChange(i, "bottom", parseInt(e.target.value) || 0)} style={{ width: "100%", background: "var(--bg-surface)", color: "var(--text-primary)", border: "1px solid var(--border-color)", borderRadius: "4px", padding: "4px" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <input type="range" className={styles.slider} min={0} max={imageSize.height} value={row.bottom} onChange={(e) => handleRowChange(i, "bottom", parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
+                    <span style={{ fontSize: "0.8rem", width: "40px", textAlign: "right", fontFamily: "monospace" }}>{row.bottom}px</span>
+                  </div>
                 </div>
               </div>
             </div>
