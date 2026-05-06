@@ -202,10 +202,8 @@ export default function Home() {
       )}
 
       <div className={styles.mainLayout}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-          
-          <section className={styles.panel}>
-            <h2 className={styles.panelTitle}>1. グリッド構成の指定</h2>
+        <section className={styles.panel}>
+          <h2 className={styles.panelTitle}>1. グリッド構成の指定</h2>
             <div style={{ display: "flex", gap: "2rem", alignItems: "center" }}>
               <div className={styles.formGroup} style={{ flex: 1 }}>
                 <label className={styles.label}>列数 (横方向)</label>
@@ -317,6 +315,7 @@ export default function Home() {
                 onChangeGridSpec={setGridSpec} 
                 configCols={configCols}
                 configRows={configRows}
+                isMobile={isMobile}
               />
             </section>
           )}
@@ -329,12 +328,11 @@ export default function Home() {
                 onChangeGridSpec={setGridSpec} 
                 configCols={configCols}
                 configRows={configRows}
+                isMobile={isMobile}
               />
             </section>
           )}
-        </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
           <section className={styles.panel}>
             <h2 className={styles.panelTitle}>5. エクスポート</h2>
             <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
@@ -349,7 +347,6 @@ export default function Home() {
               {isProcessing ? "処理中..." : isMobile ? "スタンプ画像を生成する（一覧表示）" : "ZIP一括ダウンロード"}
             </button>
           </section>
-        </div>
       </div>
 
       {generatedImages && (

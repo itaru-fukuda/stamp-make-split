@@ -10,9 +10,10 @@ interface CanvasPreviewProps {
   onChangeGridSpec: (spec: GridSpec) => void;
   configCols: number;
   configRows: number;
+  isMobile?: boolean;
 }
 
-export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec, configCols, configRows }: CanvasPreviewProps) {
+export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec, configCols, configRows, isMobile = false }: CanvasPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const [imageObj, setImageObj] = useState<HTMLImageElement | null>(null);
@@ -108,6 +109,45 @@ export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec, co
     onChangeGridSpec({ ...gridSpec, rows: newRows });
   };
 
+  const renderControl = (label: string, value: number, max: number, onChange: (val: number) => void) => {
+    if (isMobile) {
+      return (
+        <div style={{ flex: 1 }}>
+          <label className={styles.controlLabel}>
+            <span>{label}</span>
+          </label>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <button className={styles.stepperButton} onClick={() => onChange(value - 1)}>-</button>
+            <input type="range" className={styles.slider} min={0} max={max} value={value} onChange={(e) => onChange(parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
+            <button className={styles.stepperButton} onClick={() => onChange(value + 1)}>+</button>
+            <span style={{ fontSize: "0.8rem", width: "40px", textAlign: "right", fontFamily: "monospace" }}>{value}px</span>
+          </div>
+        </div>
+      );
+    }
+    
+    // PC UI
+    return (
+      <div style={{ flex: 1 }}>
+        <label className={styles.controlLabel}>
+          <span>{label}</span>
+        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <input type="range" className={styles.slider} min={0} max={max} value={value} onChange={(e) => onChange(parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
+          <input 
+            type="number" 
+            min={0} max={max} 
+            value={value} 
+            onChange={(e) => onChange(parseInt(e.target.value) || 0)} 
+            className={styles.input} 
+            style={{ width: "80px", padding: "0.25rem 0.5rem", fontSize: "0.85rem", height: "auto" }} 
+          />
+          <span style={{ fontSize: "0.85rem", color: "var(--text-secondary)" }}>px</span>
+        </div>
+      </div>
+    );
+  };
+
   if (!gridSpec) return <div>画像読み込み中...</div>;
 
   return (
@@ -120,32 +160,16 @@ export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec, co
         すべての列・行の境界座標を個別に調整できます。（不規則なコラージュ対応）
       </p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+      <div className={styles.gridControls}>
         {/* Columns Controls */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <h3 style={{ fontSize: "1rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "0.5rem" }}>列の調整 (X座標)</h3>
           {gridSpec.cols.map((col, i) => (
             <div key={`col-${i}`} className={styles.controlGroup} style={{ border: "1px solid var(--border-color)", padding: "0.75rem", borderRadius: "8px" }}>
               <strong style={{ fontSize: "0.9rem" }}>列 {i + 1}</strong>
-              <div style={{ display: "flex", gap: "1rem" }}>
-                <div style={{ flex: 1 }}>
-                  <label className={styles.controlLabel}>
-                    <span>左端 (Left)</span>
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <input type="range" className={styles.slider} min={0} max={imageSize.width} value={col.left} onChange={(e) => handleColChange(i, "left", parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
-                    <span style={{ fontSize: "0.8rem", width: "40px", textAlign: "right", fontFamily: "monospace" }}>{col.left}px</span>
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label className={styles.controlLabel}>
-                    <span>右端 (Right)</span>
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <input type="range" className={styles.slider} min={0} max={imageSize.width} value={col.right} onChange={(e) => handleColChange(i, "right", parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
-                    <span style={{ fontSize: "0.8rem", width: "40px", textAlign: "right", fontFamily: "monospace" }}>{col.right}px</span>
-                  </div>
-                </div>
+              <div className={styles.coordGroup}>
+                {renderControl("左端 (Left)", col.left, imageSize.width, (v) => handleColChange(i, "left", v))}
+                {renderControl("右端 (Right)", col.right, imageSize.width, (v) => handleColChange(i, "right", v))}
               </div>
             </div>
           ))}
@@ -157,25 +181,9 @@ export default function CanvasPreview({ imageUrl, gridSpec, onChangeGridSpec, co
           {gridSpec.rows.map((row, i) => (
             <div key={`row-${i}`} className={styles.controlGroup} style={{ border: "1px solid var(--border-color)", padding: "0.75rem", borderRadius: "8px" }}>
               <strong style={{ fontSize: "0.9rem" }}>行 {i + 1}</strong>
-              <div style={{ display: "flex", gap: "1rem" }}>
-                <div style={{ flex: 1 }}>
-                  <label className={styles.controlLabel}>
-                    <span>上端 (Top)</span>
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <input type="range" className={styles.slider} min={0} max={imageSize.height} value={row.top} onChange={(e) => handleRowChange(i, "top", parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
-                    <span style={{ fontSize: "0.8rem", width: "40px", textAlign: "right", fontFamily: "monospace" }}>{row.top}px</span>
-                  </div>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label className={styles.controlLabel}>
-                    <span>下端 (Bottom)</span>
-                  </label>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <input type="range" className={styles.slider} min={0} max={imageSize.height} value={row.bottom} onChange={(e) => handleRowChange(i, "bottom", parseInt(e.target.value) || 0)} style={{ flex: 1 }} />
-                    <span style={{ fontSize: "0.8rem", width: "40px", textAlign: "right", fontFamily: "monospace" }}>{row.bottom}px</span>
-                  </div>
-                </div>
+              <div className={styles.coordGroup}>
+                {renderControl("上端 (Top)", row.top, imageSize.height, (v) => handleRowChange(i, "top", v))}
+                {renderControl("下端 (Bottom)", row.bottom, imageSize.height, (v) => handleRowChange(i, "bottom", v))}
               </div>
             </div>
           ))}
