@@ -24,7 +24,9 @@ export default function Home() {
   
   const [removeBg, setRemoveBg] = useState(false);
   const [bgColor, setBgColor] = useState("#00ff00");
-  const [bgTolerance, setBgTolerance] = useState(80);
+  const [bgTolerance, setBgTolerance] = useState(60);
+  const [bgSoftness, setBgSoftness] = useState(50);
+  const [enableDespill, setEnableDespill] = useState(true);
 
   const [gridSpec, setGridSpec] = useState<GridSpec | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -75,21 +77,42 @@ export default function Home() {
         const cg = parseInt(hex.substring(2, 4), 16) || 0;
         const cb = parseInt(hex.substring(4, 6), 16) || 0;
         
-        const softness = 30; // Soft edge for anti-aliasing
+        const cy = 0.299 * cr + 0.587 * cg + 0.114 * cb;
+        const cu = -0.147 * cr - 0.289 * cg + 0.436 * cb;
+        const cv = 0.615 * cr - 0.515 * cg - 0.100 * cb;
 
         for (let i = 0; i < data.length; i += 4) {
           const r = data[i];
           const g = data[i + 1];
           const b = data[i + 2];
           
-          // Euclidean color distance
-          const dist = Math.sqrt(Math.pow(r - cr, 2) + Math.pow(g - cg, 2) + Math.pow(b - cb, 2));
+          const y = 0.299 * r + 0.587 * g + 0.114 * b;
+          const u = -0.147 * r - 0.289 * g + 0.436 * b;
+          const v = 0.615 * r - 0.515 * g - 0.100 * b;
+          
+          const chromaDist = Math.sqrt(Math.pow(u - cu, 2) + Math.pow(v - cv, 2));
+          const lumaDist = Math.abs(y - cy);
+          
+          // Weighted distance: prioritize color differences over brightness differences
+          const dist = Math.sqrt(Math.pow(chromaDist, 2) * 2 + Math.pow(lumaDist, 2) * 0.5);
           
           if (dist < bgTolerance) {
             data[i + 3] = 0; // Fully transparent
-          } else if (dist < bgTolerance + softness) {
+          } else if (dist < bgTolerance + bgSoftness) {
             // Soft blending
-            const alphaFactor = (dist - bgTolerance) / softness;
+            const alphaFactor = (dist - bgTolerance) / bgSoftness;
+            
+            if (enableDespill) {
+              const a = Math.max(alphaFactor, 0.05); 
+              const nr = (r - (1 - a) * cr) / a;
+              const ng = (g - (1 - a) * cg) / a;
+              const nb = (b - (1 - a) * cb) / a;
+              
+              data[i] = Math.min(255, Math.max(0, nr));
+              data[i + 1] = Math.min(255, Math.max(0, ng));
+              data[i + 2] = Math.min(255, Math.max(0, nb));
+            }
+            
             data[i + 3] = data[i + 3] * alphaFactor;
           }
         }
@@ -108,7 +131,7 @@ export default function Home() {
     };
 
     processImage();
-  }, [imageFile, removeBg, bgColor, bgTolerance]);
+  }, [imageFile, removeBg, bgColor, bgTolerance, bgSoftness, enableDespill]);
 
   const handleImageUpload = (file: File) => {
     setImageFile(file);
@@ -297,8 +320,31 @@ export default function Home() {
                       value={bgTolerance} 
                       onChange={(e) => setBgTolerance(parseInt(e.target.value))} 
                     />
+
+                    <label className={styles.controlLabel} style={{ marginTop: "1rem" }}>
+                      <span>フチの滑らかさ (Softness)</span>
+                      <span>{bgSoftness}</span>
+                    </label>
+                    <input 
+                      type="range" 
+                      className={styles.slider} 
+                      min="0" 
+                      max="100" 
+                      value={bgSoftness} 
+                      onChange={(e) => setBgSoftness(parseInt(e.target.value))} 
+                    />
+
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", marginTop: "1rem" }}>
+                      <input 
+                        type="checkbox" 
+                        checked={enableDespill} 
+                        onChange={(e) => setEnableDespill(e.target.checked)} 
+                        style={{ width: "1.2rem", height: "1.2rem", accentColor: "var(--primary-color)" }}
+                      />
+                      <span style={{ fontWeight: "bold" }}>フチの色補正（スピル除去）を行う</span>
+                    </label>
                     <p style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "0.5rem" }}>
-                      値を上げると、指定色に近い色も透過されます。フチがきれいに抜けるようにスライダーを調整してください。
+                      フチがきれいに抜けるようにスライダーを調整してください。色補正をオンにすると、フチに残った背景色（緑など）を本来の色（白など）に復元し、より綺麗に切り抜きます。
                     </p>
                   </div>
                 )}
