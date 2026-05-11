@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "スタンプ画像 自動分割ツール",
   description: "整列した一枚絵から、スタンプ用の画像に分割しダウンロードできるWebツールです。",
   openGraph: {
     title: "スタンプ画像 自動分割ツール",
     description: "整列した一枚絵から、スタンプ用の画像に分割しダウンロードできるWebツールです。",
+    url: siteUrl,
     siteName: "スタンプ画像 自動分割ツール",
     locale: "ja_JP",
     type: "website",
@@ -15,6 +19,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "スタンプ画像 自動分割ツール",
     description: "整列した一枚絵から、スタンプ用の画像に分割しダウンロードできるWebツールです。",
+  },
+  alternates: {
+    canonical: siteUrl,
   },
 };
 
