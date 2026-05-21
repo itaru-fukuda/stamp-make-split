@@ -383,7 +383,7 @@ export default function Home() {
             <h2 className={styles.panelTitle}>5. エクスポート</h2>
             <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
               スタンプ推奨仕様（透過PNG、最大370x320px、余白付き）に従い自動リサイズ変換します。<br />
-              {isMobile ? "スマホ環境では生成後に一覧表示されます。画像を個別に保存してください。" : "ファイル名は連番（sticker_01.png〜）となり、ZIPファイルで一括ダウンロードされます。"}
+              {isMobile ? "スマホ環境では生成後に一覧表示されます。画像を個別に保存してください。" : "ファイル名は連番（01.png〜）となり、ZIPファイルで一括ダウンロードされます。"}
             </p>
             <button 
               className={`${styles.button} ${styles.buttonPrimary} ${styles.buttonFull}`}

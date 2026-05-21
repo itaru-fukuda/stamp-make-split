@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
         }
 
         const index = row * gridSpec.cols.length + col + 1;
-        const fileName = `sticker_${index.toString().padStart(2, "0")}.png`;
+        const fileName = `${index.toString().padStart(2, "0")}.png`;
         
         if (isMobile) {
           images.push({
