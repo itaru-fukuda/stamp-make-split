@@ -21,6 +21,15 @@ export default function Home() {
   
   const [processedImageFile, setProcessedImageFile] = useState<File | null>(null);
   const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
+
+  // States and refs for main.png and tab.png
+  const [mainImageFile, setMainImageFile] = useState<File | null>(null);
+  const [mainImageUrl, setMainImageUrl] = useState<string | null>(null);
+  const [tabImageFile, setTabImageFile] = useState<File | null>(null);
+  const [tabImageUrl, setTabImageUrl] = useState<string | null>(null);
+
+  const mainFileInputRef = useRef<HTMLInputElement>(null);
+  const tabFileInputRef = useRef<HTMLInputElement>(null);
   
   const [removeBg, setRemoveBg] = useState(false);
   const [bgColor, setBgColor] = useState("#00ff00");
@@ -133,6 +142,40 @@ export default function Home() {
     processImage();
   }, [imageFile, removeBg, bgColor, bgTolerance, bgSoftness, enableDespill]);
 
+  const handleMainImageUpload = (file: File | undefined) => {
+    if (!file) return;
+    setMainImageFile(file);
+    setMainImageUrl(URL.createObjectURL(file));
+  };
+
+  const handleTabImageUpload = (file: File | undefined) => {
+    if (!file) return;
+    setTabImageFile(file);
+    setTabImageUrl(URL.createObjectURL(file));
+  };
+
+  const clearMainImage = () => {
+    setMainImageFile(null);
+    if (mainImageUrl) {
+      URL.revokeObjectURL(mainImageUrl);
+      setMainImageUrl(null);
+    }
+    if (mainFileInputRef.current) {
+      mainFileInputRef.current.value = "";
+    }
+  };
+
+  const clearTabImage = () => {
+    setTabImageFile(null);
+    if (tabImageUrl) {
+      URL.revokeObjectURL(tabImageUrl);
+      setTabImageUrl(null);
+    }
+    if (tabFileInputRef.current) {
+      tabFileInputRef.current.value = "";
+    }
+  };
+
   const handleImageUpload = (file: File) => {
     setImageFile(file);
     setError(null);
@@ -169,6 +212,12 @@ export default function Home() {
       formData.append("image", processedImageFile);
       formData.append("gridSpec", JSON.stringify(gridSpec));
       formData.append("isMobile", isMobile.toString());
+      if (mainImageFile) {
+        formData.append("mainImage", mainImageFile);
+      }
+      if (tabImageFile) {
+        formData.append("tabImage", tabImageFile);
+      }
       
       const response = await fetch("/api/split", {
         method: "POST",
@@ -269,6 +318,8 @@ export default function Home() {
                     setGridSpec(null);
                     setRemoveBg(false);
                     setGeneratedImages(null);
+                    clearMainImage();
+                    clearTabImage();
                   }}
                 >
                   別の画像を選ぶ
@@ -279,7 +330,97 @@ export default function Home() {
 
           {imageFile && (
             <section className={styles.panel}>
-              <h2 className={styles.panelTitle}>3. クロマキー背景除去 (任意)</h2>
+              <h2 className={styles.panelTitle}>3. 申請用画像のアップロード (任意)</h2>
+              <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginTop: "-0.5rem" }}>
+                LINEスタンプ申請に必要なメイン画像（main.png）とタブ画像（tab.png）を同時に作成できます。
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+                {/* main.png 用 */}
+                <div className={styles.formGroup} style={{ border: "1px solid var(--border-color)", padding: "1.25rem", borderRadius: "8px", position: "relative" }}>
+                  <label className={styles.label} style={{ marginBottom: "0.5rem" }}>メイン画像 (main.png用: 240x240px)</label>
+                  {!mainImageUrl ? (
+                    <div 
+                      className={styles.dropzone} 
+                      style={{ padding: "2rem 1rem", borderStyle: "dashed" }}
+                      onClick={() => mainFileInputRef.current?.click()}
+                    >
+                      <div className={styles.dropzoneIcon} style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🖼️</div>
+                      <div style={{ fontSize: "0.85rem", fontWeight: "bold" }}>クリックしてメイン画像を選択</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>PNG, JPEG, WebP (自動透過・240x240pxに縮小)</div>
+                      <input 
+                        type="file" 
+                        ref={mainFileInputRef} 
+                        className={styles.hiddenInput} 
+                        accept="image/png, image/jpeg, image/webp" 
+                        onChange={(e) => handleMainImageUpload(e.target.files?.[0])}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+                      <div style={{ 
+                        width: "120px", 
+                        height: "120px", 
+                        border: "1px solid var(--border-color)", 
+                        borderRadius: "8px", 
+                        overflow: "hidden",
+                        backgroundImage: "linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333), linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333)", 
+                        backgroundSize: "10px 10px", 
+                        backgroundPosition: "0 0, 5px 5px"
+                      }}>
+                        <img src={mainImageUrl} alt="main.png preview" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      </div>
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", wordBreak: "break-all" }}>{mainImageFile?.name}</span>
+                      <button className={styles.button} onClick={clearMainImage} style={{ padding: "0.4rem 1rem", fontSize: "0.85rem", width: "100%" }}>画像を解除</button>
+                    </div>
+                  )}
+                </div>
+
+                {/* tab.png 用 */}
+                <div className={styles.formGroup} style={{ border: "1px solid var(--border-color)", padding: "1.25rem", borderRadius: "8px", position: "relative" }}>
+                  <label className={styles.label} style={{ marginBottom: "0.5rem" }}>タブ画像 (tab.png用: 96x74px)</label>
+                  {!tabImageUrl ? (
+                    <div 
+                      className={styles.dropzone} 
+                      style={{ padding: "2rem 1rem", borderStyle: "dashed" }}
+                      onClick={() => tabFileInputRef.current?.click()}
+                    >
+                      <div className={styles.dropzoneIcon} style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📱</div>
+                      <div style={{ fontSize: "0.85rem", fontWeight: "bold" }}>クリックしてタブ画像を選択</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)" }}>PNG, JPEG, WebP (自動透過・96x74pxに縮小)</div>
+                      <input 
+                        type="file" 
+                        ref={tabFileInputRef} 
+                        className={styles.hiddenInput} 
+                        accept="image/png, image/jpeg, image/webp" 
+                        onChange={(e) => handleTabImageUpload(e.target.files?.[0])}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+                      <div style={{ 
+                        width: "120px", 
+                        height: "120px", 
+                        border: "1px solid var(--border-color)", 
+                        borderRadius: "8px", 
+                        overflow: "hidden",
+                        backgroundImage: "linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333), linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333)", 
+                        backgroundSize: "10px 10px", 
+                        backgroundPosition: "0 0, 5px 5px"
+                      }}>
+                        <img src={tabImageUrl} alt="tab.png preview" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      </div>
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-secondary)", wordBreak: "break-all" }}>{tabImageFile?.name}</span>
+                      <button className={styles.button} onClick={clearTabImage} style={{ padding: "0.4rem 1rem", fontSize: "0.85rem", width: "100%" }}>画像を解除</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {imageFile && (
+            <section className={styles.panel}>
+              <h2 className={styles.panelTitle}>4. クロマキー背景除去 (任意)</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
                   <input 
@@ -354,7 +495,7 @@ export default function Home() {
 
           {processedImageUrl && gridSpec && (
             <section className={styles.panel}>
-              <h2 className={styles.panelTitle}>4. グリッド調整</h2>
+              <h2 className={styles.panelTitle}>5. グリッド調整</h2>
               <CanvasPreview 
                 imageUrl={processedImageUrl} 
                 gridSpec={gridSpec} 
@@ -367,7 +508,7 @@ export default function Home() {
           )}
           {processedImageUrl && !gridSpec && (
             <section className={styles.panel}>
-              <h2 className={styles.panelTitle}>4. グリッド調整</h2>
+              <h2 className={styles.panelTitle}>5. グリッド調整</h2>
               <CanvasPreview 
                 imageUrl={processedImageUrl} 
                 gridSpec={null} 
@@ -380,7 +521,7 @@ export default function Home() {
           )}
 
           <section className={styles.panel}>
-            <h2 className={styles.panelTitle}>5. エクスポート</h2>
+            <h2 className={styles.panelTitle}>6. エクスポート</h2>
             <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)" }}>
               スタンプ推奨仕様（透過PNG、最大370x320px、余白付き）に従い自動リサイズ変換します。<br />
               {isMobile ? "スマホ環境では生成後に一覧表示されます。画像を個別に保存してください。" : "ファイル名は連番（01.png〜）となり、ZIPファイルで一括ダウンロードされます。"}
@@ -395,38 +536,107 @@ export default function Home() {
           </section>
       </div>
 
-      {generatedImages && (
-        <section className={styles.panel} style={{ animation: "fadeIn 0.5s ease", marginTop: "2rem", border: "2px solid var(--primary-color)" }}>
-          <h2 className={styles.panelTitle} style={{ borderBottom: "none", paddingBottom: 0, color: "var(--primary-color)" }}>✅ スタンプ画像が生成されました！</h2>
-          <p style={{ fontSize: "0.95rem", color: "var(--text-secondary)" }}>
-            以下の画像を長押しして「写真に追加（保存）」するか、個別ボタンから保存してください。
-          </p>
-          
-          <div style={{ 
-            display: "grid", 
-            gridTemplateColumns: `repeat(${Math.min(configCols, 4)}, 1fr)`, 
-            gap: "1.5rem", 
-            marginTop: "1rem" 
-          }}>
-            {generatedImages.map((img, i) => (
-              <div key={i} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center" }}>
-                <div style={{ width: "100%", aspectRatio: "370/320", backgroundImage: "linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333), linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333)", backgroundSize: "10px 10px", backgroundPosition: "0 0, 5px 5px", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border-color)" }}>
-                  <img src={img.data} alt={img.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+      {generatedImages && (() => {
+        const mainImage = generatedImages.find(img => img.name === "main.png");
+        const tabImage = generatedImages.find(img => img.name === "tab.png");
+        const stickerImages = generatedImages.filter(img => img.name !== "main.png" && img.name !== "tab.png");
+
+        return (
+          <section className={styles.panel} style={{ animation: "fadeIn 0.5s ease", marginTop: "2rem", border: "2px solid var(--primary-color)" }}>
+            <h2 className={styles.panelTitle} style={{ borderBottom: "none", paddingBottom: 0, color: "var(--primary-color)" }}>✅ スタンプ画像が生成されました！</h2>
+            <p style={{ fontSize: "0.95rem", color: "var(--text-secondary)" }}>
+              以下の画像を長押しして「写真に追加（保存）」するか、個別ボタンから保存してください。
+            </p>
+            
+            {(mainImage || tabImage) && (
+              <div style={{ marginBottom: "2rem", borderBottom: "1px dashed var(--border-color)", paddingBottom: "1.5rem" }}>
+                <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>📋 LINE申請用画像</h3>
+                <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
+                  {mainImage && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center", width: "140px" }}>
+                      <div style={{ 
+                        width: "120px", 
+                        height: "120px", 
+                        backgroundImage: "linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333), linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333)", 
+                        backgroundSize: "10px 10px", 
+                        backgroundPosition: "0 0, 5px 5px", 
+                        borderRadius: "8px", 
+                        overflow: "hidden", 
+                        border: "1px solid var(--border-color)" 
+                      }}>
+                        <img src={mainImage.data} alt="main.png" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                      </div>
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "bold" }}>main.png (240x240)</span>
+                      <a 
+                        href={mainImage.data} 
+                        download="main.png"
+                        className={`${styles.button} ${styles.buttonPrimary}`}
+                        style={{ fontSize: "0.85rem", padding: "0.4rem 0.8rem", width: "100%" }}
+                      >
+                        保存
+                      </a>
+                    </div>
+                  )}
+                  {tabImage && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center", width: "140px" }}>
+                      <div style={{ 
+                        width: "120px", 
+                        height: "120px", 
+                        display: "flex", 
+                        alignItems: "center", 
+                        justifyContent: "center", 
+                        backgroundImage: "linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333), linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333)", 
+                        backgroundSize: "10px 10px", 
+                        backgroundPosition: "0 0, 5px 5px", 
+                        borderRadius: "8px", 
+                        overflow: "hidden", 
+                        border: "1px solid var(--border-color)" 
+                      }}>
+                        <div style={{ width: "96px", height: "74px", border: "1px dashed rgba(255,255,255,0.3)" }}>
+                          <img src={tabImage.data} alt="tab.png" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                        </div>
+                      </div>
+                      <span style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "bold" }}>tab.png (96x74)</span>
+                      <a 
+                        href={tabImage.data} 
+                        download="tab.png"
+                        className={`${styles.button} ${styles.buttonPrimary}`}
+                        style={{ fontSize: "0.85rem", padding: "0.4rem 0.8rem", width: "100%" }}
+                      >
+                        保存
+                      </a>
+                    </div>
+                  )}
                 </div>
-                <span style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "bold" }}>{img.name}</span>
-                <a 
-                  href={img.data} 
-                  download={img.name}
-                  className={`${styles.button} ${styles.buttonPrimary}`}
-                  style={{ fontSize: "0.9rem", padding: "0.5rem 1rem", width: "100%" }}
-                >
-                  保存
-                </a>
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+            )}
+
+            <h3 style={{ fontSize: "1.1rem", marginBottom: "1rem" }}>✨ スタンプ画像 ({stickerImages.length}枚)</h3>
+            <div style={{ 
+              display: "grid", 
+              gridTemplateColumns: `repeat(${Math.min(configCols, 4)}, 1fr)`, 
+              gap: "1.5rem"
+            }}>
+              {stickerImages.map((img, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column", gap: "0.5rem", alignItems: "center" }}>
+                  <div style={{ width: "100%", aspectRatio: "370/320", backgroundImage: "linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333), linear-gradient(45deg, #333 25%, transparent 25%, transparent 75%, #333 75%, #333)", backgroundSize: "10px 10px", backgroundPosition: "0 0, 5px 5px", borderRadius: "8px", overflow: "hidden", border: "1px solid var(--border-color)" }}>
+                    <img src={img.data} alt={img.name} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  </div>
+                  <span style={{ fontSize: "0.8rem", color: "var(--text-primary)", fontWeight: "bold" }}>{img.name}</span>
+                  <a 
+                    href={img.data} 
+                    download={img.name}
+                    className={`${styles.button} ${styles.buttonPrimary}`}
+                    style={{ fontSize: "0.9rem", padding: "0.5rem 1rem", width: "100%" }}
+                  >
+                    保存
+                  </a>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })()}
     </main>
   );
 }

@@ -15,6 +15,8 @@ export async function POST(req: NextRequest) {
     const imageFile = formData.get("image") as File;
     const gridSpecStr = formData.get("gridSpec") as string;
     const isMobile = formData.get("isMobile") === "true";
+    const mainImageFile = formData.get("mainImage") as File | null;
+    const tabImageFile = formData.get("tabImage") as File | null;
 
     if (!imageFile || !gridSpecStr) {
       return NextResponse.json({ error: "必要なデータが不足しています。" }, { status: 400 });
@@ -105,6 +107,52 @@ export async function POST(req: NextRequest) {
         } else {
           zip.file(fileName, paddedBuffer);
         }
+      }
+    }
+
+    // Process main.png if provided (240x240px, fit contain, background transparent)
+    if (mainImageFile) {
+      const mainArrayBuffer = await mainImageFile.arrayBuffer();
+      const mainBuffer = Buffer.from(mainArrayBuffer);
+      const mainPaddedBuffer = await sharp(mainBuffer)
+        .ensureAlpha()
+        .resize(240, 240, {
+          fit: "contain",
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        })
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+
+      if (isMobile) {
+        images.push({
+          name: "main.png",
+          data: `data:image/png;base64,${mainPaddedBuffer.toString("base64")}`
+        });
+      } else {
+        zip.file("main.png", mainPaddedBuffer);
+      }
+    }
+
+    // Process tab.png if provided (96x74px, fit contain, background transparent)
+    if (tabImageFile) {
+      const tabArrayBuffer = await tabImageFile.arrayBuffer();
+      const tabBuffer = Buffer.from(tabArrayBuffer);
+      const tabPaddedBuffer = await sharp(tabBuffer)
+        .ensureAlpha()
+        .resize(96, 74, {
+          fit: "contain",
+          background: { r: 0, g: 0, b: 0, alpha: 0 }
+        })
+        .png({ compressionLevel: 9 })
+        .toBuffer();
+
+      if (isMobile) {
+        images.push({
+          name: "tab.png",
+          data: `data:image/png;base64,${tabPaddedBuffer.toString("base64")}`
+        });
+      } else {
+        zip.file("tab.png", tabPaddedBuffer);
       }
     }
 
